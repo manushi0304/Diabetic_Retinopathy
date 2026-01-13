@@ -1,3 +1,118 @@
+# 🩺 Lightweight Diabetic Retinopathy Detection for Point-of-Care Devices
+
+Diabetic Retinopathy (DR) is one of the leading causes of preventable blindness worldwide. Early detection through retinal screening can significantly reduce vision loss, yet manual grading of fundus images is time-consuming, subjective, and difficult to scale—especially in rural and resource-limited healthcare environments.
+
+This project presents a **clinically reliable, lightweight diabetic retinopathy classification system** built using **ImageNet transfer learning**, a **custom residual classifier head**, **minimal but safe preprocessing**, and **automated multi-model training and evaluation**. The pipeline is designed with a strong focus on **real-world deployability, reproducibility, and diagnostic safety**.
+
+---
+
+## 🔍 Motivation
+
+Most deep learning models for medical imaging focus primarily on accuracy, often resulting in large, compute-heavy architectures that are impractical for point-of-care deployment. In contrast, this work prioritizes:
+
+- Low memory footprint  
+- CPU-only execution  
+- Real-time inference  
+- Very low false negative rates (clinical safety)  
+
+The objective is to bridge the gap between **research-grade performance** and **real-world clinical usability**.
+
+---
+
+## 🔹 End-to-End Diabetic Retinopathy Classification Pipeline
+
+This section describes the complete pipeline used to build, train, evaluate, and select reliable DR classification models.
+
+---
+
+### 1️⃣ Dataset Loading & Labeling
+
+Retinal fundus images are organized in **class-wise directories** (`DR` and `No_DR`).
+
+The pipeline:
+- Traverses directories using `os.listdir`
+- Collects absolute image paths
+- Assigns binary labels:
+  - **DR → 1**
+  - **No DR → 0**
+
+All image paths and labels are stored in a **Pandas DataFrame**, ensuring traceability and seamless integration with data generators.
+
+---
+
+### 2️⃣ Dataset Splitting Strategy
+
+The dataset is split using **stratified sampling** to preserve class balance:
+
+- **70% Training**
+- **15% Validation**
+- **15% Test**
+
+Key constraints:
+- Validation and test sets are **never augmented**
+- No shuffling during evaluation
+- Ensures unbiased and clinically reliable performance estimation
+
+---
+
+### 3️⃣ Image Resolution & Input Shape
+
+All images are resized to:
+
+**256 × 256 × 3 (RGB)**
+
+This ensures:
+- Uniform input size
+- Compatibility with pretrained ImageNet backbones
+- Efficient balance between visual detail and computational cost
+
+---
+
+### 4️⃣ Image Preprocessing (On-the-Fly)
+
+Preprocessing is performed dynamically using `ImageDataGenerator`.
+
+**Applied to all images:**
+- Pixel rescaling:  
+  `pixel = pixel / 255` → normalized to `[0, 1]`
+
+**Applied only to training images:**
+- Brightness augmentation:  
+  `brightness_range = (0.8, 1.2)`
+
+**Explicitly avoided:**
+- No rotations, flips, zooming, or cropping  
+- No ImageNet mean–std normalization  
+- No contrast enhancement (CLAHE)
+
+📌 **Rationale:** Preserve clinical authenticity and avoid artificial distortions that could bias medical interpretation.
+
+---
+
+### 5️⃣ ImageNet Transfer Learning (Core Design)
+
+Pretrained **ImageNet CNN backbones** (ResNet, Inception, DenseNet, etc.) are used as **feature extractors**.
+
+- The original 1000-class ImageNet classification head is removed
+- Only convolutional layers are retained
+
+**Why ImageNet?**
+ImageNet models learn transferable low- and mid-level features such as:
+- Edges
+- Textures
+- Shapes  
+
+These representations generalize effectively to retinal imaging tasks.
+
+---
+
+### 6️⃣ Custom Classification Head (Residual Design)
+
+The ImageNet head is replaced with a **custom residual classifier head** optimized for DR detection.
+
+**Architecture:**
+512 → 256 → (Residual 256) → 128 → 64 → Output
+
 
 **Design choices:**
 - ReLU activations
