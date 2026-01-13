@@ -1,109 +1,119 @@
-🩺 Lightweight Diabetic Retinopathy Detection for Point-of-Care Devices
+# 🩺 Lightweight Diabetic Retinopathy Detection for Point-of-Care Devices
 
-Diabetic Retinopathy (DR) is one of the leading causes of preventable blindness, particularly affecting populations with limited access to specialized ophthalmology services. Early screening can significantly reduce the risk of vision loss, but manual grading of retinal fundus images is labor-intensive, subjective, and difficult to scale.
+Diabetic Retinopathy (DR) is one of the leading causes of preventable blindness worldwide. Early screening and timely referral can significantly reduce vision loss, yet manual grading of retinal fundus images is slow, subjective, and difficult to scale—especially in rural and resource-constrained healthcare settings.
 
-This project presents a lightweight, real-time diabetic retinopathy screening system designed specifically for point-of-care and edge deployment. The system combines deep convolutional neural networks (CNNs) for powerful feature extraction with post-training quantization and classical machine learning classifiers to achieve high accuracy while remaining computationally efficient.
+This project presents a **lightweight, real-time diabetic retinopathy screening system** optimized for **edge and point-of-care deployment**. The system combines **deep convolutional neural networks (CNNs)** with **post-training quantization and classical machine learning classifiers**, achieving high diagnostic accuracy while maintaining a small memory footprint and fast inference.
 
-🔍 Motivation and Problem Statement
+---
 
-Most deep learning models for medical imaging prioritize accuracy but overlook deployability constraints such as memory footprint, inference latency, and CPU-only execution. In real-world screening environments—such as rural clinics, mobile health vans, and primary-care centers—these constraints are critical.
+## 🔍 Motivation
 
-The goal of this work is to bridge the gap between high-performing DR classifiers and practical clinical deployment by:
+Most deep learning-based medical imaging systems focus primarily on maximizing accuracy, often resulting in large, compute-heavy models that are impractical for real-world clinical deployment. In contrast, this work emphasizes **deployability**, addressing key constraints such as:
 
-Reducing model size without compromising diagnostic safety
+- Limited memory and compute availability
+- CPU-only execution environments
+- Real-time inference requirements
+- High clinical safety (low false negatives)
 
-Maintaining very high sensitivity to avoid missed disease cases
+The objective is to bridge the gap between research-grade performance and real-world usability.
 
-Ensuring fast and reliable inference on low-resource hardware
+---
 
-🧠 Methodology Overview
+## 🧠 Methodology
 
-The proposed system follows a hybrid inference approach. Instead of relying on a large end-to-end deep network, the pipeline separates representation learning from classification.
+The proposed system follows a **hybrid inference pipeline** that decouples feature extraction from classification.
 
-First, a deep CNN pretrained on ImageNet is fine-tuned on retinal fundus images to learn rich, hierarchical visual features relevant to diabetic retinopathy, such as microaneurysms, hemorrhages, and exudates. The final classification layers of the CNN are then removed, and the network is repurposed as a feature extractor.
+Pretrained CNN backbones are fine-tuned on retinal fundus images to learn robust, hierarchical representations of diabetic retinopathy indicators such as microaneurysms, hemorrhages, and exudates. After training, the classification layers are removed, and the CNN is used solely as a **feature extractor**.
 
-To make the system suitable for deployment, the trained CNN models are converted to TensorFlow Lite format and optimized using post-training quantization. Multiple quantization strategies (FP32, FP16, and INT8) are explored, with FP16 offering the best balance between accuracy retention and model compression.
+To enable deployment on resource-constrained devices, the trained CNNs are converted into **TensorFlow Lite** format and optimized using **post-training quantization**. Multiple quantization strategies (FP32, FP16, INT8) are explored, with FP16 providing the best balance between compression and performance stability.
 
-Once features are extracted from the quantized CNN, they are standardized and optionally reduced in dimensionality using Principal Component Analysis (PCA). These compact feature vectors are then classified using lightweight machine learning models such as Support Vector Machines (SVM), K-Nearest Neighbors (KNN), and Random Forests (RF).
+The extracted feature vectors are standardized and optionally reduced in dimensionality using **Principal Component Analysis (PCA)**. Lightweight machine learning classifiers—**Support Vector Machines (SVM)**, **K-Nearest Neighbors (KNN)**, and **Random Forests (RF)**—are then trained on these features to perform the final classification.
 
-This hybrid design ensures that most of the computational burden lies in a compact, optimized CNN, while the final decision-making remains fast, interpretable, and memory-efficient.
+This design keeps the deep learning component compact and efficient, while ensuring fast, interpretable decision-making.
 
-🧪 Models and Experimental Design
+---
 
-The system evaluates multiple state-of-the-art CNN backbones commonly used in medical image analysis, including:
+## 🧪 Models and Dataset
 
-DenseNet121
+### CNN Backbones Evaluated
+- DenseNet121  
+- EfficientNetV2B0  
+- MobileNetV2  
+- InceptionV3  
+- ResNet50V2  
+- NASNetMobile  
 
-EfficientNetV2B0
+### Dataset
+The models are evaluated using the **APTOS-2019 Blindness Detection dataset**, consisting of retinal fundus images collected from large-scale screening programs in India.
 
-MobileNetV2
+The task is framed as a **binary classification problem**:
+- **No Diabetic Retinopathy (No-DR)**
+- **Diabetic Retinopathy (DR)**
 
-InceptionV3
+The dataset is carefully cleaned by removing duplicates, maintaining patient-level splits, and applying minimal preprocessing to preserve clinically relevant features.
 
-ResNet50V2
+---
 
-NASNetMobile
+## 📊 Results and Performance
 
-All models are trained and evaluated on the APTOS-2019 Blindness Detection dataset, which consists of retinal fundus images collected from real-world screening programs in India. To reflect realistic screening conditions, the task is framed as a binary classification problem:
-No Diabetic Retinopathy vs Diabetic Retinopathy.
+All evaluated CNN backbones demonstrate strong performance, achieving classification accuracy between **97.23% and 99.44%**.
 
-Careful preprocessing is applied to preserve clinically relevant details while minimizing artificial enhancement. Duplicate images are removed, patient-level splits are maintained, and multiple clinically meaningful metrics are reported.
+The best-performing configuration is a **DenseNet121 FP16 feature extractor combined with an SVM classifier**, which achieves:
 
-📊 Results and Key Findings
+- **Accuracy:** 99.25%  
+- **F1-Score:** 99.22%  
+- **Sensitivity:** 99.35%  
+- **Specificity:** 99.09%  
+- **Model Size:** 14.77 MB  
 
-Across all evaluated backbones, the models achieve strong classification performance, with accuracy ranging between 97.23% and 99.44%. However, accuracy alone is not sufficient for clinical screening. Therefore, the system emphasizes:
+This represents a **~6× reduction in model size** compared to the original DenseNet121 model (90.4 MB), with no loss in clinical reliability.
 
-Sensitivity (Recall for DR) to minimize missed disease
+---
 
-Specificity to avoid unnecessary referrals
+## ⚡ Efficiency and Deployment
 
-False Positive Rate (FPR) and False Negative Rate (FNR) for safety analysis
+The optimized models run efficiently on **CPU-only environments**, with average inference times ranging from approximately **75 ms to 170 ms per image**, depending on the backbone and classifier.
 
-Among all configurations, the DenseNet121 FP16 feature extractor combined with an SVM classifier emerged as the best-performing hybrid model. This configuration achieved:
+By exporting the models in **TensorFlow Lite format**, the system is portable and suitable for integration into:
+- Point-of-care diagnostic devices
+- Mobile screening applications
+- Embedded healthcare systems
 
-99.25% Accuracy
+All inference is performed **on-device**, ensuring patient data privacy and eliminating dependency on cloud infrastructure.
 
-99.22% F1-Score
+---
 
-99.35% Sensitivity
+## 🩺 Clinical Significance
 
-99.09% Specificity
+From a clinical perspective, the system prioritizes **high sensitivity** to minimize missed DR cases, while maintaining high specificity to avoid unnecessary referrals. Reporting metrics such as **False Positive Rate (FPR)** and **False Negative Rate (FNR)** ensures transparency and reliability for screening applications.
 
-Crucially, this performance was achieved with a model size of just 14.77 MB, down from the original 90.4 MB DenseNet121 model, demonstrating that substantial compression is possible without sacrificing diagnostic reliability.
+The modular design allows easy replacement or retraining of the classifier head without modifying the feature extractor, making the system adaptable to new datasets or imaging devices.
 
-⚡ Deployment and Efficiency
+---
 
-The optimized models are designed to run efficiently on CPU-only environments, making them suitable for real-time screening. Average inference times range from approximately 75 ms to 170 ms per image, depending on the backbone and classifier used.
+## 🔮 Future Work
 
-By exporting the models in TensorFlow Lite format, the system is portable and easily integrable into mobile applications, embedded systems, or clinical screening devices. All processing is performed on-device, ensuring data privacy and eliminating the need for cloud-based inference.
+Potential extensions of this work include:
+- Multi-class grading of diabetic retinopathy severity
+- Lesion-level explainability using Grad-CAM
+- Cross-dataset validation on EyePACS and Messidor
+- Deployment on mobile and embedded hardware platforms
 
-🩺 Clinical Relevance
+---
 
-From a screening perspective, the proposed system prioritizes patient safety. Very low false negative rates ensure that individuals with diabetic retinopathy are rarely missed, while high specificity limits unnecessary referrals and reduces clinician workload.
+## 👩‍💻 Authors
 
-The modular nature of the pipeline allows the classifier head to be easily swapped or retrained without modifying the underlying feature extractor, making the system adaptable to new datasets, imaging devices, or clinical requirements.
+**Manushi Bombaywala**  
+Palak Jethwani  
+Arumuga Arun R  
 
-🔮 Future Directions
+School of Computer Science and Engineering  
+Vellore Institute of Technology, India  
 
-While the current work focuses on binary DR screening, future extensions may include:
+---
 
-Multi-class grading of DR severity
+## ⭐ Acknowledgements
 
-Lesion-level explainability using Grad-CAM
+This project uses the **APTOS-2019 Blindness Detection dataset** provided via Kaggle. The work is inspired by recent advances in edge AI, medical image analysis, and efficient deep learning for healthcare.
 
-Cross-dataset generalization studies
-
-Deployment on mobile and embedded platforms
-
-👩‍💻 Authors
-
-Manushi Bombaywala
-Palak Jethwani
-Arumuga Arun R
-
-School of Computer Science and Engineering
-Vellore Institute of Technology, India
-
-⭐ Acknowledgements
-
-This project uses the APTOS-2019 Blindness Detection dataset made publicly available via Kaggle. The work is inspired by recent advances in edge AI, medical imaging, and efficient deep learning.
+If you find this project useful, please consider starring the repository.
